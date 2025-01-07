@@ -208,11 +208,11 @@ def start_game(bot, message, vs_ai=False, difficulty=None):
 
 def handle_callback(bot, call):
     if call.data.startswith('othello_mode_'):
-        mode = call.data.split('_')[2]
+        mode = call.data.split('_')[2]  # Gets 'friend', 'ai_easy', 'ai_medium', or 'ai_hard'
         if mode == 'friend':
             start_game(bot, call.message)
         elif mode.startswith('ai'):
-            difficulty = mode.split('_')[1]
+            difficulty = mode.replace('ai_', '')  # Extracts 'easy', 'medium', or 'hard'
             start_game(bot, call.message, vs_ai=True, difficulty=difficulty)
         return True
     if call.data.startswith('othello_join_'):
