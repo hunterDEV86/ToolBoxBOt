@@ -2,21 +2,18 @@ import subprocess
 import sys
 
 def install_requirements():
-    required_packages = [
+       required_packages = [
         'pyTelegramBotAPI',
         'flask',
         'requests',
-        'python-dotenv',
+        'python-dotenv', 
         'aiohttp',
         'asyncio',
         'uvicorn',
         'fastapi',
         'django',
-        'websockets',
-        'threading',
-        'queue',
-        'contextlib',
-        'io'
+        'Queuelib'
+        'websockets'
     ]
     
     for package in required_packages:
