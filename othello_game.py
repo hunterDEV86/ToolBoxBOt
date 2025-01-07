@@ -98,56 +98,89 @@ def has_valid_moves(board, player):
             if is_valid_move(board, i, j, player):
                 return True
     return False
-
 def get_ai_move(board, difficulty, player):
-    """
-    محاسبه بهترین حرکت برای هوش مصنوعی
-    """
     valid_moves = []
     for i in range(8):
         for j in range(8):
             if is_valid_move(board, i, j, player):
-                # محاسبه امتیاز هر حرکت
                 score = evaluate_move(board, i, j, player, difficulty)
                 valid_moves.append((score, i, j))
     
     if not valid_moves:
         return None
         
+    # Easy mode: Random valid move
     if difficulty == 'easy':
-        # انتخاب تصادفی از بین حرکت‌های معتبر
-        return random.choice(valid_moves)[1:]
-    else:
-        # انتخاب بهترین حرکت
-        return max(valid_moves)[1:]
+        _, row, col = random.choice(valid_moves)
+        return (row, col)
+        
+    # Medium/Hard mode: Strategic move
+    _, row, col = max(valid_moves)
+    return (row, col)
 
 def evaluate_move(board, row, col, player, difficulty):
-    """
-    ارزیابی امتیاز یک حرکت
-    """
     temp_board = [row[:] for row in board]
     make_move(temp_board, row, col, player)
     
-    # وزن‌دهی به موقعیت‌های مختلف
-    weights = [
-        [100, -20, 10, 5, 5, 10, -20, 100],
-        [-20, -50, -2, -2, -2, -2, -50, -20],
-        [10, -2, -1, -1, -1, -1, -2, 10],
-        [5, -2, -1, -1, -1, -1, -2, 5],
-        [5, -2, -1, -1, -1, -1, -2, 5],
-        [10, -2, -1, -1, -1, -1, -2, 10],
-        [-20, -50, -2, -2, -2, -2, -50, -20],
-        [100, -20, 10, 5, 5, 10, -20, 100]
+    # Strategic position weights
+    position_weights = [
+        [120, -20, 20, 5, 5, 20, -20, 120],
+        [-20, -40, -5, -5, -5, -5, -40, -20],
+        [20, -5, 15, 3, 3, 15, -5, 20],
+        [5, -5, 3, 3, 3, 3, -5, 5],
+        [5, -5, 3, 3, 3, 3, -5, 5],
+        [20, -5, 15, 3, 3, 15, -5, 20],
+        [-20, -40, -5, -5, -5, -5, -40, -20],
+        [120, -20, 20, 5, 5, 20, -20, 120]
     ]
     
-    score = weights[row][col]
+    score = position_weights[row][col]
+    
     if difficulty == 'hard':
-        # اضافه کردن فاکتورهای استراتژیک برای سختی بالا
+        # Additional strategic factors for hard mode
         black, white = count_pieces(temp_board)
-        score += (black - white) * 10
+        piece_difference = black - white if player == 'B' else white - black
+        score += piece_difference * 10
         
+        # Corner proximity
+        corners = [(0,0), (0,7), (7,0), (7,7)]
+        for corner_row, corner_col in corners:
+            if abs(row - corner_row) <= 1 and abs(col - corner_col) <= 1:
+                score += 30
+        
+        # Mobility (number of valid moves)
+        opponent = 'W' if player == 'B' else 'B'
+        player_mobility = sum(1 for i in range(8) for j in range(8) if is_valid_move(temp_board, i, j, player))
+        opponent_mobility = sum(1 for i in range(8) for j in range(8) if is_valid_move(temp_board, i, j, opponent))
+        score += (player_mobility - opponent_mobility) * 5
+    
+    elif difficulty == 'medium':
+        # Simpler evaluation for medium mode
+        black, white = count_pieces(temp_board)
+        piece_difference = black - white if player == 'B' else white - black
+        score += piece_difference * 5
+    
     return score
 
+def handle_ai_turn(game, bot, chat_id, message_id):
+    ai_move = get_ai_move(game['board'], game['difficulty'], 'W')
+    
+    if ai_move:
+        row, col = ai_move
+        make_move(game['board'], row, col, 'W')
+        game['current_player'] = 'B'
+        
+        black_count, white_count = count_pieces(game['board'])
+        
+        bot.edit_message_text(
+            f"🔴: {black_count} | ⚪: {white_count}\nنوبت: 🔴",
+            chat_id,
+            message_id,
+            reply_markup=create_keyboard(game['game_id'])
+        )
+        
+        return True
+    return False
 def show_game_menu(bot, message):
     keyboard = InlineKeyboardMarkup(row_width=2)
     
