@@ -7,9 +7,12 @@ import threading
 import time
 from queue import Queue
 import main1
+from keep_alive import keep_alive
+
+keep_alive()
 
 # Initialize bot with your token
-bot = telebot.TeleBot("7264390282:AAGbnTa8u6SRqxJpaiyhnMBpTYVc5KvrC7s")
+bot = telebot.TeleBot(os.environ.get('token'))
 
 # Dictionary to store user states and running codes
 user_coding_state = {}
