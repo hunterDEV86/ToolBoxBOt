@@ -207,6 +207,14 @@ def start_game(bot, message, vs_ai=False, difficulty=None):
         )
 
 def handle_callback(bot, call):
+    if call.data.startswith('othello_mode_'):
+        mode = call.data.split('_')[2]
+        if mode == 'friend':
+            start_game(bot, call.message)
+        elif mode.startswith('ai'):
+            difficulty = mode.split('_')[1]
+            start_game(bot, call.message, vs_ai=True, difficulty=difficulty)
+        return True
     if call.data.startswith('othello_join_'):
         game_id = call.data.split('_')[2]
         if game_id not in active_games:
@@ -292,14 +300,7 @@ def handle_callback(bot, call):
             del active_games[game_id]
         return True
         # در تابع handle_callback اضافه کنید:
-    if call.data.startswith('othello_mode_'):
-        mode = call.data.split('_')[2]
-        if mode == 'friend':
-            start_game(bot, call.message)
-        elif mode.startswith('ai'):
-            difficulty = mode.split('_')[1]
-            start_game(bot, call.message, vs_ai=True, difficulty=difficulty)
-        return True
+    
     return False
     
 
