@@ -216,15 +216,19 @@ def show_panel(message):
 
 @bot.callback_query_handler(func=lambda call: True)
 def handle_query(call):
-    if call.data.startswith(('join_', 'move_', 'othello_', 'go_')):
-        if (xo_game.handle_callback(bot, call) or 
-            othello_game.handle_callback(bot, call) or
-            go_game.handle_callback(bot, call)):
-            return
-            
-    # بقیه منطق panel
+    # حذف شرط اضافی و ساده‌سازی منطق
+    if call.data.startswith('go_'):
+        go_game.handle_callback(bot, call)
+        return
+    elif call.data.startswith('xo_'):
+        xo_game.handle_callback(bot, call)
+        return
+    elif call.data.startswith('othello_'):
+        othello_game.handle_callback(bot, call)
+        return
+        
+    # منطق panel
     user_id = call.from_user.id
-
     if call.data == "run_code":
         if len(running_codes) >= MAX_CONCURRENT_CODES:
             bot.answer_callback_query(call.id,
@@ -239,7 +243,6 @@ def handle_query(call):
         user_coding_state[sent.message_id] = user_id
         # پاک کردن پیام قبلی کاربر
         bot.delete_message(call.message.chat.id, call.message.message_id)
-
     elif call.data == "status":
         running_count = len(running_codes)
         permanent_count = len(permanent_codes)
@@ -251,7 +254,6 @@ def handle_query(call):
 • زمان مجاز اجرا: {CODE_TIMEOUT} ثانیه
         """
         bot.answer_callback_query(call.id, status_text, show_alert=True)
-
     elif call.data == "close_panel":
         username = call.from_user.username
         if username in ADMIN_LIST:
@@ -262,7 +264,6 @@ def handle_query(call):
             del user_panels[user_id]
             bot.delete_message(call.message.chat.id, call.message.message_id)
             bot.answer_callback_query(call.id, "پنل بسته شد")
-
 import go_game
 
 @bot.message_handler(commands=['go'])
