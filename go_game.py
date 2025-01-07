@@ -198,13 +198,14 @@ class GoGame:
                     white_score += 1
                     
         return black_score - white_score if self.current_player == "⚫" else white_score - black_score
-
 def create_board_markup(game):
     markup = types.InlineKeyboardMarkup(row_width=BOARD_SIZE)
     for i in range(BOARD_SIZE):
         row = []
         for j in range(BOARD_SIZE):
-            cell = game.board[i][j] if game.board[i][j] != " " else "·"
+            cell = game.board[i][j] if game.board[i][j] != " " else "⋅"
+            # اضافه کردن فاصله بین مهره‌ها
+            cell = f"{cell} "
             callback_data = f"go_move_{i}_{j}"
             row.append(types.InlineKeyboardButton(cell, callback_data=callback_data))
         markup.row(*row)
@@ -214,6 +215,24 @@ def create_board_markup(game):
     markup.row(pass_btn, resign_btn)
     
     return markup
+
+def check_captures(self, row, col):
+    opponent = "⚪" if self.current_player == "⚫" else "⚫"
+    captured = False
+    directions = [(0,1), (1,0), (0,-1), (-1,0)]
+    
+    for dx, dy in directions:
+        x, y = row + dx, col + dy
+        if 0 <= x < BOARD_SIZE and 0 <= y < BOARD_SIZE:
+            if self.board[x][y] == opponent:
+                group = self.get_group(x, y)
+                if not any(self.has_liberties(gx, gy) for gx, gy in group):
+                    captured = True
+                    for gx, gy in group:
+                        self.board[gx][gy] = " "
+                        self.captured_stones[self.current_player] += 1
+    
+    return captured
 
 def start_game(bot, message):
     markup = types.InlineKeyboardMarkup(row_width=2)
@@ -310,7 +329,15 @@ def handle_callback(bot, call):
         game = games.get(chat_id)
         if not game:
             return True
-            
+        
+        # اضافه کردن چک کردن کاربر در حالت بازی با ربات
+        if game.mode == "bot" and call.from_user.id != game.player1:
+            bot.answer_callback_query(
+                call.id, 
+                "فقط بازیکن اصلی می‌تواند در این بازی حرکت کند!"
+            )
+            return True
+
         row, col = map(int, action[5:].split("_"))
         
         # Check if it's player's turn
@@ -322,7 +349,6 @@ def handle_callback(bot, call):
         elif game.mode == "bot" and game.current_player == "⚪":
             bot.answer_callback_query(call.id, "نوبت ربات است!")
             return True
-
         if game.make_move(row, col):
             bot.edit_message_reply_markup(
                 chat_id,
