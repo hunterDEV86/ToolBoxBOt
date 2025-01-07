@@ -2,35 +2,41 @@ from telebot.types import InlineKeyboardMarkup, InlineKeyboardButton
 import time
 
 active_games = {}
-
-def create_board():
-    return [[" " for _ in range(3)] for _ in range(3)]
+def create_board(size=3):
+    return [[" " for _ in range(size)] for _ in range(size)]
 
 def create_keyboard(game_id):
     keyboard = InlineKeyboardMarkup()
-    board = active_games[game_id]['board']
+    game = active_games[game_id]
+    board = game['board']
+    size = len(board)
     
-    for i in range(3):
+    for i in range(size):
         row = []
-        for j in range(3):
+        for j in range(size):
             cell = board[i][j] if board[i][j] != " " else "·"
             row.append(InlineKeyboardButton(cell, callback_data=f"move_{game_id}_{i}_{j}"))
         keyboard.row(*row)
     return keyboard
 
 def check_winner(board):
+    size = len(board)
+    
+    # Check rows
     for row in board:
-        if row.count(row[0]) == 3 and row[0] != " ":
+        if row.count(row[0]) == size and row[0] != " ":
             return row[0]
     
-    for col in range(3):
-        if board[0][col] == board[1][col] == board[2][col] != " ":
+    # Check columns
+    for col in range(size):
+        if all(board[row][col] == board[0][col] != " " for row in range(size)):
             return board[0][col]
     
-    if board[0][0] == board[1][1] == board[2][2] != " ":
+    # Check diagonals
+    if all(board[i][i] == board[0][0] != " " for i in range(size)):
         return board[0][0]
-    if board[0][2] == board[1][1] == board[2][0] != " ":
-        return board[0][2]
+    if all(board[i][size-1-i] == board[0][size-1] != " " for i in range(size)):
+        return board[0][size-1]
     
     if all(cell != " " for row in board for cell in row):
         return "Draw"
@@ -38,27 +44,44 @@ def check_winner(board):
     return None
 
 def start_game(bot, message):
-    game_id = str(time.time())
-    active_games[game_id] = {
-        'board': create_board(),
-        'players': {'X': None, 'O': None},
-        'current_player': 'X',
-        'chat_id': message.chat.id
-    }
-    
     keyboard = InlineKeyboardMarkup()
-    join_button = InlineKeyboardButton("Join Game 🎮", callback_data=f"join_{game_id}")
-    keyboard.add(join_button)
+    keyboard.row(
+        InlineKeyboardButton("3×3", callback_data="size_3"),
+        InlineKeyboardButton("4×4", callback_data="size_4"),
+        InlineKeyboardButton("5×5", callback_data="size_5")
+    )
     
-    sent = bot.send_message(
+    bot.send_message(
         message.chat.id,
-        "🎲 New XO Game Started!\nClick to join:",
+        "🎲 انتخاب سایز بازی:",
         reply_markup=keyboard
     )
-    active_games[game_id]['message_id'] = sent.message_id
 
 def handle_callback(bot, call):
-    if call.data.startswith('join_'):
+    if call.data.startswith('size_'):
+        size = int(call.data.split('_')[1])
+        game_id = str(time.time())
+        active_games[game_id] = {
+            'board': create_board(size),
+            'players': {'X': None, 'O': None},
+            'current_player': 'X',
+            'chat_id': call.message.chat.id,
+            'size': size
+        }
+        
+        keyboard = InlineKeyboardMarkup()
+        join_button = InlineKeyboardButton("Join Game 🎮", callback_data=f"join_{game_id}")
+        keyboard.add(join_button)
+        
+        sent = bot.edit_message_text(
+            f"🎲 بازی {size}×{size} شروع شد!\nبرای پیوستن کلیک کنید:",
+            call.message.chat.id,
+            call.message.message_id,
+            reply_markup=keyboard
+        )
+        active_games[game_id]['message_id'] = sent.message_id
+        return True
+    elif call.data.startswith('join_'):
         game_id = call.data.split('_')[1]
         if game_id not in active_games:
             bot.answer_callback_query(call.id, "Game not found!")
