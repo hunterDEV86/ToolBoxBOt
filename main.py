@@ -198,7 +198,7 @@ def show_panel(message):
 @bot.callback_query_handler(func=lambda call: True)
 def handle_query(call):
     # اول چک کنیم آیا callback مربوط به XO است
-    if call.data.startswith(('join_', 'move_')):
+    if call.data.startswith(('join_', 'move_', 'size_')):
         if xo_game.handle_callback(bot, call):
             return
             
@@ -208,8 +208,7 @@ def handle_query(call):
     if call.data == "run_code":
         if len(running_codes) >= MAX_CONCURRENT_CODES:
             bot.answer_callback_query(call.id, "⚠️ سیستم در حال حاضر مشغول است")
-            return
-            
+            return            
         markup = types.ForceReply(selective=True)
         sent = bot.send_message(
             call.message.chat.id,
