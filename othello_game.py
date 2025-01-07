@@ -12,7 +12,6 @@ active_games = {}
 
 def create_board():
     board = [[" " for _ in range(8)] for _ in range(8)]
-    # Initial pieces in center
     board[3][3] = "⚪"
     board[3][4] = "🔴"
     board[4][3] = "🔴" 
@@ -22,7 +21,6 @@ def create_board():
 def create_keyboard(game_id):
     keyboard = InlineKeyboardMarkup()
     board = active_games[game_id]['board']
-    
     for i in range(8):
         row = []
         for j in range(8):
@@ -49,7 +47,6 @@ def is_valid_move(board, row, col, player):
             
             if 0 <= x < 8 and 0 <= y < 8 and board[x][y] == player_piece:
                 return True
-                
     return False
 
 def make_move(board, row, col, player):
@@ -75,17 +72,75 @@ def make_move(board, row, col, player):
                 break
     
     return len(pieces_flipped) > 0
-# اضافه کردن ایمپورت‌های جدید در ابتدای فایل
-from telebot.types import InlineKeyboardMarkup, InlineKeyboardButton
-import time
-import random
 
-# اضافه کردن متغیر برای نگهداری درجه سختی بازی
-AI_DIFFICULTIES = {
-    'easy': 1,
-    'medium': 3, 
-    'hard': 5
-}
+def get_ai_move(board, difficulty, player):
+    valid_moves = []
+    for i in range(8):
+        for j in range(8):
+            if is_valid_move(board, i, j, player):
+                score = evaluate_move(board, i, j, player, difficulty)
+                valid_moves.append((score, i, j))
+    
+    if not valid_moves:
+        return None
+        
+    if difficulty == 'easy':
+        _, row, col = random.choice(valid_moves)
+    else:
+        _, row, col = max(valid_moves)
+    return (row, col)
+
+def evaluate_move(board, row, col, player, difficulty):
+    temp_board = [row[:] for row in board]
+    make_move(temp_board, row, col, player)
+    
+    weights = [
+        [120, -20, 20, 5, 5, 20, -20, 120],
+        [-20, -40, -5, -5, -5, -5, -40, -20],
+        [20, -5, 15, 3, 3, 15, -5, 20],
+        [5, -5, 3, 3, 3, 3, -5, 5],
+        [5, -5, 3, 3, 3, 3, -5, 5],
+        [20, -5, 15, 3, 3, 15, -5, 20],
+        [-20, -40, -5, -5, -5, -5, -40, -20],
+        [120, -20, 20, 5, 5, 20, -20, 120]
+    ]
+    
+    score = weights[row][col]
+    
+    if difficulty in ['medium', 'hard']:
+        black, white = count_pieces(temp_board)
+        piece_diff = black - white if player == 'B' else white - black
+        score += piece_diff * (10 if difficulty == 'hard' else 5)
+        
+    return score
+
+def start_game(bot, message, vs_ai=False, difficulty=None):
+    game_id = str(time.time())
+    active_games[game_id] = {
+        'board': create_board(),
+        'players': {'B': None, 'W': None},
+        'current_player': 'B',
+        'chat_id': message.chat.id,
+        'vs_ai': vs_ai,
+        'difficulty': difficulty,
+        'message_id': None
+    }
+    
+    if vs_ai:
+        active_games[game_id]['players']['B'] = {
+            'id': message.from_user.id,
+            'name': message.from_user.first_name
+        }
+        active_games[game_id]['players']['W'] = {
+            'id': 'AI',
+            'name': 'Bot'
+        }
+        sent = bot.send_message(
+            message.chat.id,
+            f"🎮 بازی با هوش مصنوعی (سطح {difficulty}) شروع شد!\n🔴 {message.from_user.first_name} vs ⚪ Bot\n\nنوبت: 🔴",
+            reply_markup=create_keyboard(game_id)
+        )
+        active_games[game_id]['message_id'] = sent.message_id
 
 def count_pieces(board):
     red = sum(row.count("🔴") for row in board)
@@ -98,69 +153,6 @@ def has_valid_moves(board, player):
             if is_valid_move(board, i, j, player):
                 return True
     return False
-def get_ai_move(board, difficulty, player):
-    valid_moves = []
-    for i in range(8):
-        for j in range(8):
-            if is_valid_move(board, i, j, player):
-                score = evaluate_move(board, i, j, player, difficulty)
-                valid_moves.append((score, i, j))
-    
-    if not valid_moves:
-        return None
-        
-    # Easy mode: Random valid move
-    if difficulty == 'easy':
-        _, row, col = random.choice(valid_moves)
-        return (row, col)
-        
-    # Medium/Hard mode: Strategic move
-    _, row, col = max(valid_moves)
-    return (row, col)
-
-def evaluate_move(board, row, col, player, difficulty):
-    temp_board = [row[:] for row in board]
-    make_move(temp_board, row, col, player)
-    
-    # Strategic position weights
-    position_weights = [
-        [120, -20, 20, 5, 5, 20, -20, 120],
-        [-20, -40, -5, -5, -5, -5, -40, -20],
-        [20, -5, 15, 3, 3, 15, -5, 20],
-        [5, -5, 3, 3, 3, 3, -5, 5],
-        [5, -5, 3, 3, 3, 3, -5, 5],
-        [20, -5, 15, 3, 3, 15, -5, 20],
-        [-20, -40, -5, -5, -5, -5, -40, -20],
-        [120, -20, 20, 5, 5, 20, -20, 120]
-    ]
-    
-    score = position_weights[row][col]
-    
-    if difficulty == 'hard':
-        # Additional strategic factors for hard mode
-        black, white = count_pieces(temp_board)
-        piece_difference = black - white if player == 'B' else white - black
-        score += piece_difference * 10
-        
-        # Corner proximity
-        corners = [(0,0), (0,7), (7,0), (7,7)]
-        for corner_row, corner_col in corners:
-            if abs(row - corner_row) <= 1 and abs(col - corner_col) <= 1:
-                score += 30
-        
-        # Mobility (number of valid moves)
-        opponent = 'W' if player == 'B' else 'B'
-        player_mobility = sum(1 for i in range(8) for j in range(8) if is_valid_move(temp_board, i, j, player))
-        opponent_mobility = sum(1 for i in range(8) for j in range(8) if is_valid_move(temp_board, i, j, opponent))
-        score += (player_mobility - opponent_mobility) * 5
-    
-    elif difficulty == 'medium':
-        # Simpler evaluation for medium mode
-        black, white = count_pieces(temp_board)
-        piece_difference = black - white if player == 'B' else white - black
-        score += piece_difference * 5
-    
-    return score
 
 def handle_ai_turn(game, bot, chat_id, message_id):
     ai_move = get_ai_move(game['board'], game['difficulty'], 'W')
@@ -181,13 +173,12 @@ def handle_ai_turn(game, bot, chat_id, message_id):
         
         return True
     return False
+
 def show_game_menu(bot, message):
     keyboard = InlineKeyboardMarkup(row_width=2)
     
-    # دکمه‌های بازی با دوست
     vs_friend = InlineKeyboardButton("بازی با دوست 👥", callback_data="othello_mode_friend")
     
-    # دکمه‌های بازی با بات در سطوح مختلف
     vs_ai_easy = InlineKeyboardButton("بات - آسان 🤖", callback_data="othello_mode_ai_easy")
     vs_ai_medium = InlineKeyboardButton("بات - متوسط 🤖", callback_data="othello_mode_ai_medium")
     vs_ai_hard = InlineKeyboardButton("بات - سخت 🤖", callback_data="othello_mode_ai_hard")
@@ -201,51 +192,13 @@ def show_game_menu(bot, message):
         reply_markup=keyboard
     )
 
-def start_game(bot, message, vs_ai=False, difficulty=None):
-    game_id = str(time.time())
-    active_games[game_id] = {
-        'board': create_board(),
-        'players': {'B': None, 'W': None},
-        'current_player': 'B',
-        'chat_id': message.chat.id,
-        'vs_ai': vs_ai,
-        'difficulty': difficulty
-    }
-    
-    if not vs_ai:
-        keyboard = InlineKeyboardMarkup(row_width=2)
-        join_button = InlineKeyboardButton("بازی با دوست 👥", callback_data=f"othello_join_{game_id}")
-        keyboard.add(join_button)
-        sent = bot.send_message(
-            message.chat.id,
-            "🎲 انتخاب حالت بازی:\n",
-            reply_markup=keyboard
-        )
-        active_games[game_id]['message_id'] = sent.message_id
-    else:
-        # بازیکن اول به عنوان مهره قرمز
-        active_games[game_id]['players']['B'] = {
-            'id': message.from_user.id,
-            'name': message.from_user.first_name
-        }
-        # بات به عنوان مهره سفید
-        active_games[game_id]['players']['W'] = {
-            'id': 'AI',
-            'name': 'Bot'
-        }
-        bot.send_message(
-            message.chat.id,
-            f"🎮 بازی با هوش مصنوعی (سطح {difficulty}) شروع شد!\n🔴 {message.from_user.first_name} vs ⚪ Bot\n\nنوبت: 🔴",
-            reply_markup=create_keyboard(game_id)
-        )
-
 def handle_callback(bot, call):
     if call.data.startswith('othello_mode_'):
-        mode = call.data.split('_')[2]  # Gets 'friend', 'ai_easy', 'ai_medium', or 'ai_hard'
+        mode = call.data.split('_')[2]
         if mode == 'friend':
             start_game(bot, call.message)
         elif mode.startswith('ai'):
-            difficulty = mode.replace('ai_', '')  # Extracts 'easy', 'medium', or 'hard'
+            difficulty = mode.replace('ai_', '')
             start_game(bot, call.message, vs_ai=True, difficulty=difficulty)
         return True
     if call.data.startswith('othello_join_'):
@@ -333,18 +286,15 @@ def handle_callback(bot, call):
             del active_games[game_id]
         
         if game['vs_ai'] and next_player == 'W':
-            # Get AI move
             ai_move = get_ai_move(game['board'], game['difficulty'], 'W')
             
             if ai_move:
                 ai_row, ai_col = ai_move
                 make_move(game['board'], ai_row, ai_col, 'W')
-                next_player = 'B'  # Switch back to player
+                next_player = 'B'
                 
-                # Update game state
                 black_count, white_count = count_pieces(game['board'])
                 
-                # Update display with AI's move
                 bot.edit_message_text(
                     f"🔴: {black_count} | ⚪: {white_count}\nنوبت: 🔴",
                     call.message.chat.id,
@@ -354,11 +304,4 @@ def handle_callback(bot, call):
         
         return True
     
-    return False    
-
-
-
-# Add inside handle_callback function, right after the player's move is processed
-# (after the make_move() call and before checking for valid moves)
-
-
+    return False
