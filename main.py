@@ -39,7 +39,7 @@ import othello_game
 keep_alive()
 
 # Initialize bot with your token
-bot = telebot.TeleBot(os.environ.get('token'))
+bot = telebot.TeleBot("7264390282:AAGbnTa8u6SRqxJpaiyhnMBpTYVc5KvrC7s")
 
 # Dictionary to store user states and running codes
 user_coding_state = {}
@@ -221,7 +221,7 @@ def handle_query(call):
     if call.data.startswith(('join_', 'move_', 'othello_')):
         if xo_game.handle_callback(bot, call) or othello_game.handle_callback(bot, call):
             return
-
+            
     # بقیه منطق panel
     user_id = call.from_user.id
 
@@ -288,17 +288,22 @@ def start_othello(message):
     othello_game.start_game(bot, message)
 
 
-# اضافه کردن othello به callback handler
+# اضافه کردن import در بالای فایل
+import go_game
+
+# اضافه کردن handler برای دستور /go
+@bot.message_handler(commands=['go'])
+def start_go(message):
+    go_game.start_game(bot, message)
+
+# اضافه کردن به callback handler موجود
 @bot.callback_query_handler(func=lambda call: True)
 def handle_query(call):
-    if call.data.startswith(('join_', 'move_', 'othello_')):
-        if xo_game.handle_callback(bot, call) or othello_game.handle_callback(
-                bot, call):
+    if call.data.startswith(('join_', 'move_', 'othello_', 'go_')):
+        if (xo_game.handle_callback(bot, call) or 
+            othello_game.handle_callback(bot, call) or
+            go_game.handle_callback(bot, call)):
             return
-
-# این handler را حذف کنید
-
-
 @bot.message_handler(func=lambda message: True)
 def handle_all_messages(message):
     if message.text.startswith('/'):
@@ -402,7 +407,8 @@ bot.set_my_commands([
     telebot.types.BotCommand("/codefor", "اجرای کد دائمی (فقط مدیران)"),
     telebot.types.BotCommand("/stopcode", "توقف کدهای"),
     telebot.types.BotCommand("/xo", "شروع بازی XO"),
-    telebot.types.BotCommand("/othello", "شروع بازی اوتلو 5×5")
+    telebot.types.BotCommand("/othello", "شروع بازی اوتلو"),
+    telebot.types.BotCommand("/go", "شروع بازی گو")
 ])
 
 # Start the bot
