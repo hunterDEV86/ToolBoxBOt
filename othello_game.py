@@ -1,5 +1,12 @@
 from telebot.types import InlineKeyboardMarkup, InlineKeyboardButton
 import time
+import random
+
+AI_DIFFICULTIES = {
+    'easy': 1,
+    'medium': 3, 
+    'hard': 5
+}
 
 active_games = {}
 
@@ -68,6 +75,17 @@ def make_move(board, row, col, player):
                 break
     
     return len(pieces_flipped) > 0
+# اضافه کردن ایمپورت‌های جدید در ابتدای فایل
+from telebot.types import InlineKeyboardMarkup, InlineKeyboardButton
+import time
+import random
+
+# اضافه کردن متغیر برای نگهداری درجه سختی بازی
+AI_DIFFICULTIES = {
+    'easy': 1,
+    'medium': 3, 
+    'hard': 5
+}
 
 def count_pieces(board):
     red = sum(row.count("🔴") for row in board)
@@ -81,25 +99,112 @@ def has_valid_moves(board, player):
                 return True
     return False
 
-def start_game(bot, message):
+def get_ai_move(board, difficulty, player):
+    """
+    محاسبه بهترین حرکت برای هوش مصنوعی
+    """
+    valid_moves = []
+    for i in range(8):
+        for j in range(8):
+            if is_valid_move(board, i, j, player):
+                # محاسبه امتیاز هر حرکت
+                score = evaluate_move(board, i, j, player, difficulty)
+                valid_moves.append((score, i, j))
+    
+    if not valid_moves:
+        return None
+        
+    if difficulty == 'easy':
+        # انتخاب تصادفی از بین حرکت‌های معتبر
+        return random.choice(valid_moves)[1:]
+    else:
+        # انتخاب بهترین حرکت
+        return max(valid_moves)[1:]
+
+def evaluate_move(board, row, col, player, difficulty):
+    """
+    ارزیابی امتیاز یک حرکت
+    """
+    temp_board = [row[:] for row in board]
+    make_move(temp_board, row, col, player)
+    
+    # وزن‌دهی به موقعیت‌های مختلف
+    weights = [
+        [100, -20, 10, 5, 5, 10, -20, 100],
+        [-20, -50, -2, -2, -2, -2, -50, -20],
+        [10, -2, -1, -1, -1, -1, -2, 10],
+        [5, -2, -1, -1, -1, -1, -2, 5],
+        [5, -2, -1, -1, -1, -1, -2, 5],
+        [10, -2, -1, -1, -1, -1, -2, 10],
+        [-20, -50, -2, -2, -2, -2, -50, -20],
+        [100, -20, 10, 5, 5, 10, -20, 100]
+    ]
+    
+    score = weights[row][col]
+    if difficulty == 'hard':
+        # اضافه کردن فاکتورهای استراتژیک برای سختی بالا
+        black, white = count_pieces(temp_board)
+        score += (black - white) * 10
+        
+    return score
+
+def show_game_menu(bot, message):
+    keyboard = InlineKeyboardMarkup(row_width=2)
+    
+    # دکمه‌های بازی با دوست
+    vs_friend = InlineKeyboardButton("بازی با دوست 👥", callback_data="othello_mode_friend")
+    
+    # دکمه‌های بازی با بات در سطوح مختلف
+    vs_ai_easy = InlineKeyboardButton("بات - آسان 🤖", callback_data="othello_mode_ai_easy")
+    vs_ai_medium = InlineKeyboardButton("بات - متوسط 🤖", callback_data="othello_mode_ai_medium")
+    vs_ai_hard = InlineKeyboardButton("بات - سخت 🤖", callback_data="othello_mode_ai_hard")
+    
+    keyboard.add(vs_friend)
+    keyboard.add(vs_ai_easy, vs_ai_medium, vs_ai_hard)
+    
+    bot.send_message(
+        message.chat.id,
+        "🎮 لطفا حالت بازی را انتخاب کنید:",
+        reply_markup=keyboard
+    )
+
+def start_game(bot, message, vs_ai=False, difficulty=None):
     game_id = str(time.time())
     active_games[game_id] = {
         'board': create_board(),
         'players': {'B': None, 'W': None},
         'current_player': 'B',
-        'chat_id': message.chat.id
+        'chat_id': message.chat.id,
+        'vs_ai': vs_ai,
+        'difficulty': difficulty
     }
     
-    keyboard = InlineKeyboardMarkup()
-    join_button = InlineKeyboardButton("Join Game 🎮", callback_data=f"othello_join_{game_id}")
-    keyboard.add(join_button)
-    
-    sent = bot.send_message(
-        message.chat.id,
-        "🎲 بازی اوتلو 8×8 شروع شد!\nبرای پیوستن کلیک کنید:",
-        reply_markup=keyboard
-    )
-    active_games[game_id]['message_id'] = sent.message_id
+    if not vs_ai:
+        keyboard = InlineKeyboardMarkup(row_width=2)
+        join_button = InlineKeyboardButton("بازی با دوست 👥", callback_data=f"othello_join_{game_id}")
+        keyboard.add(join_button)
+        sent = bot.send_message(
+            message.chat.id,
+            "🎲 انتخاب حالت بازی:\n",
+            reply_markup=keyboard
+        )
+        active_games[game_id]['message_id'] = sent.message_id
+    else:
+        # بازیکن اول به عنوان مهره قرمز
+        active_games[game_id]['players']['B'] = {
+            'id': message.from_user.id,
+            'name': message.from_user.first_name
+        }
+        # بات به عنوان مهره سفید
+        active_games[game_id]['players']['W'] = {
+            'id': 'AI',
+            'name': 'Bot'
+        }
+        bot.send_message(
+            message.chat.id,
+            f"🎮 بازی با هوش مصنوعی (سطح {difficulty}) شروع شد!\n🔴 {message.from_user.first_name} vs ⚪ Bot\n\nنوبت: 🔴",
+            reply_markup=create_keyboard(game_id)
+        )
 
 def handle_callback(bot, call):
     if call.data.startswith('othello_join_'):
@@ -186,5 +291,16 @@ def handle_callback(bot, call):
             )
             del active_games[game_id]
         return True
-        
+        # در تابع handle_callback اضافه کنید:
+    if call.data.startswith('othello_mode_'):
+        mode = call.data.split('_')[2]
+        if mode == 'friend':
+            start_game(bot, call.message)
+        elif mode.startswith('ai'):
+            difficulty = mode.split('_')[1]
+            start_game(bot, call.message, vs_ai=True, difficulty=difficulty)
+        return True
     return False
+    
+
+
