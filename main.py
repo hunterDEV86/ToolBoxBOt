@@ -2,7 +2,7 @@ import subprocess
 import sys
 
 def install_requirements():
-       required_packages = [
+    required_packages = [
         'pyTelegramBotAPI',
         'flask',
         'requests',
@@ -12,7 +12,6 @@ def install_requirements():
         'uvicorn',
         'fastapi',
         'django',
-        'Queuelib'
         'websockets'
     ]
     
@@ -27,7 +26,6 @@ def install_requirements():
 if __name__ == '__main__':
     print("📦 Installing required packages...")
     install_requirements()
-
 
 import telebot
 from telebot import types
