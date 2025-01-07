@@ -217,10 +217,10 @@ def show_panel(message):
 @bot.callback_query_handler(func=lambda call: True)
 def handle_query(call):
     # حذف شرط اضافی و ساده‌سازی منطق
-    if call.data.startswith('go_'):
-        go_game.handle_callback(bot, call)
-        return
-    elif call.data.startswith('xo_'):
+    #if call.data.startswith('go_'):
+     #   go_game.handle_callback(bot, call)
+      #  return
+    if call.data.startswith('xo_'):
         xo_game.handle_callback(bot, call)
         return
     elif call.data.startswith('othello_'):
@@ -266,9 +266,9 @@ def handle_query(call):
             bot.answer_callback_query(call.id, "پنل بسته شد")
 import go_game
 
-@bot.message_handler(commands=['go'])
-def start_go(message):
-    go_game.start_game(bot, message)
+#@bot.message_handler(commands=['go'])
+#def start_go(message):
+ #   go_game.start_game(bot, message)
 
 @bot.message_handler(commands=['cancel'])
 def cancel_coding(message):
@@ -291,26 +291,19 @@ def start_xo(message):
 
 @bot.message_handler(commands=['othello'])
 def start_othello(message):
-    bot.send_message(message.chat.id, "🎲  اوتهلو �")
-    othello_game.start_game(bot, message)
+    bot.send_message(message.chat.id, "🎲 بازی اوتلو")
+    othello_game.show_game_menu(bot, message)  # تغییر به فراخوانی منوی جدید
 
 
 # اضافه کردن import در بالای فایل
-import go_game
-
-# اضافه کردن handler برای دستور /go
-@bot.message_handler(commands=['go'])
-def start_go(message):
-    go_game.start_game(bot, message)
 
 # اضافه کردن به callback handler موجود
 @bot.callback_query_handler(func=lambda call: True)
 def handle_query(call):
-    if call.data.startswith(('join_', 'move_', 'othello_', 'go_')):
-        if (xo_game.handle_callback(bot, call) or 
-            othello_game.handle_callback(bot, call) or
-            go_game.handle_callback(bot, call)):
-            return
+    if call.data.startswith(('othello_mode_', 'othello_join_', 'othello_')):
+        othello_game.handle_callback(bot, call)
+        return
+    # بقیه کد callback handler...
 @bot.message_handler(func=lambda message: True)
 def handle_all_messages(message):
     if message.text.startswith('/'):
