@@ -39,6 +39,7 @@ import time
 from queue import Queue
 import main1
 from keep_alive import keep_alive
+import xo_game
 
 keep_alive()
 
@@ -248,6 +249,16 @@ def cancel_coding(message):
         sent = bot.reply_to(message, "❌ عملیات لغو شد.")
         delete_command_messages(message.chat.id, message.message_id, sent.message_id)
 
+@bot.message_handler(commands=['xo'])
+def start_xo(message):
+    xo_game.start_game(bot, message)
+
+@bot.callback_query_handler(func=lambda call: call.data.startswith(('join_', 'move_')))
+def handle_xo_callback(call):
+    if xo_game.handle_callback(bot, call):
+        return
+
+
 @bot.message_handler(func=lambda message: True)
 def handle_all_messages(message):
     if message.text.startswith('/'):
@@ -329,7 +340,11 @@ bot.set_my_commands([
     telebot.types.BotCommand("/panel", "نمایش پنل کاربری"),
     telebot.types.BotCommand("/cancel", "لغو عملیات فعلی"),
     telebot.types.BotCommand("/codefor", "اجرای کد دائمی (فقط مدیران)"),
-    telebot.types.BotCommand("/stopcode", "توقف کدهای") ])
+    telebot.types.BotCommand("/stopcode", "توقف کدهای"),
+    telebot.types.BotCommand("/xo", "شروع بازی XO")
+])
 
 # Start the bot
 bot.infinity_polling()
+
+
