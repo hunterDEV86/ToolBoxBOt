@@ -214,12 +214,12 @@ def show_panel(message):
     delete_command_messages(message.chat.id, message.message_id,
                             sent.message_id)
 
-
 @bot.callback_query_handler(func=lambda call: True)
 def handle_query(call):
-    # اول چک کردن callback های XO و Othello
-    if call.data.startswith(('join_', 'move_', 'othello_')):
-        if xo_game.handle_callback(bot, call) or othello_game.handle_callback(bot, call):
+    if call.data.startswith(('join_', 'move_', 'othello_', 'go_')):
+        if (xo_game.handle_callback(bot, call) or 
+            othello_game.handle_callback(bot, call) or
+            go_game.handle_callback(bot, call)):
             return
             
     # بقیه منطق panel
@@ -262,6 +262,12 @@ def handle_query(call):
             del user_panels[user_id]
             bot.delete_message(call.message.chat.id, call.message.message_id)
             bot.answer_callback_query(call.id, "پنل بسته شد")
+
+import go_game
+
+@bot.message_handler(commands=['go'])
+def start_go(message):
+    go_game.start_game(bot, message)
 
 @bot.message_handler(commands=['cancel'])
 def cancel_coding(message):
