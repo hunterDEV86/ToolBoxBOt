@@ -197,6 +197,12 @@ def show_panel(message):
 
 @bot.callback_query_handler(func=lambda call: True)
 def handle_query(call):
+    # اول چک کنیم آیا callback مربوط به XO است
+    if call.data.startswith(('join_', 'move_')):
+        if xo_game.handle_callback(bot, call):
+            return
+            
+    # سپس بقیه callback ها را بررسی کنیم
     user_id = call.from_user.id
     
     if call.data == "run_code":
@@ -237,7 +243,6 @@ def handle_query(call):
             del user_panels[user_id]
             bot.delete_message(call.message.chat.id, call.message.message_id)
             bot.answer_callback_query(call.id, "پنل بسته شد")
-
 @bot.message_handler(commands=['cancel'])
 def cancel_coding(message):
     if message.from_user.id not in user_panels:
