@@ -216,18 +216,14 @@ def show_panel(message):
 
 @bot.callback_query_handler(func=lambda call: True)
 def handle_query(call):
-    # حذف شرط اضافی و ساده‌سازی منطق
-    #if call.data.startswith('go_'):
-     #   go_game.handle_callback(bot, call)
-      #  return
-    if call.data.startswith('xo_'):
-        xo_game.handle_callback(bot, call)
-        return
-    elif call.data.startswith('othello_'):
+    if call.data.startswith('othello_'):
         othello_game.handle_callback(bot, call)
         return
-        
-    # منطق panel
+    elif call.data.startswith('xo_'):
+        xo_game.handle_callback(bot, call)
+        return
+    
+    # بقیه منطق panel
     user_id = call.from_user.id
     if call.data == "run_code":
         if len(running_codes) >= MAX_CONCURRENT_CODES:
@@ -264,7 +260,6 @@ def handle_query(call):
             del user_panels[user_id]
             bot.delete_message(call.message.chat.id, call.message.message_id)
             bot.answer_callback_query(call.id, "پنل بسته شد")
-import go_game
 
 #@bot.message_handler(commands=['go'])
 #def start_go(message):
