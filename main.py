@@ -1,3 +1,37 @@
+import subprocess
+import sys
+
+def install_requirements():
+    required_packages = [
+        'pyTelegramBotAPI',
+        'flask',
+        'requests',
+        'python-dotenv',
+        'aiohttp',
+        'asyncio',
+        'uvicorn',
+        'fastapi',
+        'django',
+        'websockets',
+        'threading',
+        'queue',
+        'contextlib',
+        'io'
+    ]
+    
+    for package in required_packages:
+        try:
+            subprocess.check_call([sys.executable, '-m', 'pip', 'install', package])
+            print(f"✅ {package} installed successfully")
+        except:
+            print(f"❌ Failed to install {package}")
+
+# Install packages when script starts
+if __name__ == '__main__':
+    print("📦 Installing required packages...")
+    install_requirements()
+
+
 import telebot
 from telebot import types
 import sys
