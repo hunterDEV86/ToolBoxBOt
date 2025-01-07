@@ -12,7 +12,8 @@ def install_requirements():
         'uvicorn',
         'fastapi',
         'django',
-        'websockets'
+        'websockets',
+        'os'
     ]
     
     for package in required_packages:
@@ -30,6 +31,7 @@ if __name__ == '__main__':
 import telebot
 from telebot import types
 import sys
+import os
 from io import StringIO
 import contextlib
 import threading
