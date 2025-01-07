@@ -348,7 +348,32 @@ bot.set_my_commands([
     telebot.types.BotCommand("/xo", "شروع بازی XO")
 ])
 
+# اضافه کردن import
+import othello_game
+
+# اضافه کردن handler جدید
+@bot.message_handler(commands=['othello'])
+def start_othello(message):
+    othello_game.start_game(bot, message)
+
+# اضافه کردن othello به callback handler
+@bot.callback_query_handler(func=lambda call: True)
+def handle_query(call):
+    if call.data.startswith(('join_', 'move_', 'othello_')):
+        if xo_game.handle_callback(bot, call) or othello_game.handle_callback(bot, call):
+            return
+    # بقیه کد...
+
+# اضافه کردن دستور به لیست دستورات
+bot.set_my_commands([
+    telebot.types.BotCommand("/start", "شروع مجدد ربات"),
+    telebot.types.BotCommand("/panel", "نمایش پنل کاربری"),
+    telebot.types.BotCommand("/cancel", "لغو عملیات فعلی"),
+    telebot.types.BotCommand("/codefor", "اجرای کد دائمی (فقط مدیران)"),
+    telebot.types.BotCommand("/stopcode", "توقف کدهای"),
+    telebot.types.BotCommand("/xo", "شروع بازی XO"),
+    telebot.types.BotCommand("/othello", "شروع بازی اوتلو 5×5")
+])
+
 # Start the bot
 bot.infinity_polling()
-
-
