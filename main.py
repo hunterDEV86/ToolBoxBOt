@@ -148,6 +148,27 @@ def execute_with_timeout(code,
     if message_id in running_codes:
         del running_codes[message_id]
 
+@bot.message_handler(commands=['calc'])
+def handle_calc(message):
+    try:
+        # دریافت فرمول از کاربر
+        formula = message.text.split(' ', 1)[1]
+
+        # محاسبه و رسم نمودار
+        response, plot_buf = calculate_and_plot(formula)
+
+        # ارسال پاسخ به صورت عکس
+        if isinstance(plot_buf, io.BytesIO):
+            bot.send_photo(message.chat.id, plot_buf)
+            bot.reply_to(message, response)  # ارسال پاسخ به صورت متن
+        else:
+            bot.send_photo(message.chat.id, plot_buf)
+
+    except Exception as e:
+        error_message = f"خطا: {str(e)}"
+        image_buf = create_image_from_text(error_message)
+        bot.send_photo(message.chat.id, image_buf)
+
 
 @bot.message_handler(commands=['start'])
 def send_welcome(message):
