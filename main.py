@@ -56,19 +56,16 @@ REPLIT_DOMAIN = "https://67f4f76e-9e9c-4299-b5c9-60f512a1432b-00-32zk82shfh1ws.p
 
 def delete_command_messages(chat_id, command_message_id, bot_response_id):
     try:
-        # Delete the command message
         threading.Timer(
             DELETE_TIMEOUT,
-            lambda: bot.delete_message(chat_id, command_message_id)
-        ).start()
+            lambda: bot.delete_message(chat_id, command_message_id)).start()
+        threading.Timer(
+            DELETE_TIMEOUT,
+            lambda: bot.delete_message(chat_id, bot_response_id)).start()
+    except:
+        pass
 
-        # Delete the bot's response message
-        threading.Timer(
-            DELETE_TIMEOUT,
-            lambda: bot.delete_message(chat_id, bot_response_id)
-        ).start()
-    except Exception as e:
-        print(f"❌ Failed to delete messages: {e}")
+
 def execute_with_timeout(code,
                          message_id,
                          chat_id,
