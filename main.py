@@ -41,7 +41,7 @@ import othello_game
 
 keep_alive()
 # Initialize bot with your token
-bot.run(os.environ['token'], session = True)
+bot = telebot.TeleBot(os.environ['token'], session = True)
 
 # Dictionary to store user states and running codes
 user_coding_state = {}
