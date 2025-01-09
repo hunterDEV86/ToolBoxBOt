@@ -3,7 +3,6 @@ flask==3.0.0
 fastapi==0.104.1
 uvicorn==0.24.0
 django==5.0.0
-plaintext
 sympy
 matplotlib
 numpy
