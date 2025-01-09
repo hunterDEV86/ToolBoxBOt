@@ -1,5 +1,8 @@
+
 import subprocess
 import sys
+
+
 
 
 def install_requirements():
@@ -35,6 +38,8 @@ import main1
 from keep_alive import keep_alive
 import xo_game
 import othello_game
+from calculator import calculate_and_plot, create_image_from_text
+import io
 
 keep_alive()
 
