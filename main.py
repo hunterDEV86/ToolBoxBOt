@@ -1,8 +1,8 @@
-
+import io
 import subprocess
 import sys
 
-
+from calculator import calculate_and_plot, create_image_from_text
 
 
 def install_requirements():
@@ -38,13 +38,10 @@ import main1
 from keep_alive import keep_alive
 import xo_game
 import othello_game
-from calculator import calculate_and_plot, create_image_from_text
-import io
 
 keep_alive()
-
 # Initialize bot with your token
-bot = telebot.TeleBot("7264390282:AAGbnTa8u6SRqxJpaiyhnMBpTYVc5KvrC7s")
+bot.run(os.environ['token'], session = True)
 
 # Dictionary to store user states and running codes
 user_coding_state = {}
@@ -433,4 +430,8 @@ bot.set_my_commands([
 ])
 
 # Start the bot
-bot.infinity_polling()
+# Add before bot.infinity_polling()
+bot.remove_webhook()
+# Replace bot.infinity_polling()
+bot.infinity_polling(timeout=10, long_polling_timeout=5)
+
