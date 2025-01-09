@@ -38,7 +38,10 @@ import main1
 from keep_alive import keep_alive
 import xo_game
 import othello_game
+import logging
 
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 keep_alive()
 # Initialize bot with your token
 bot = telebot.TeleBot(os.environ['token'])
@@ -430,6 +433,7 @@ bot.set_my_commands([
 
 # Start the bot
 # Add before bot.infinity_polling()
+logger.info("Starting bot...")
 bot.remove_webhook()
 # Replace bot.infinity_polling()
 bot.infinity_polling(timeout=10, long_polling_timeout=5)
