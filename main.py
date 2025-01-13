@@ -360,4 +360,4 @@ bot.set_my_commands([
 # Start the bot
 logger.info("Starting bot...")
 bot.remove_webhook()
-bot.infinity_polling(timeout=10, long_polling_timeout=5)
+bot.polling()
