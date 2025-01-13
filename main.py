@@ -37,7 +37,6 @@ import contextlib
 import threading
 import time
 from queue import Queue
-import main1
 from keep_alive import keep_alive
 import xo_game
 import othello_game
